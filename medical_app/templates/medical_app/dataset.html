@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entraînement du Modèle</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'index' %}">🏥 Diagnostic Médical</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>Entraînement du Modèle</h2>
+        
+        {% if accuracy %}
+            <div class="alert alert-success">
+                Modèle entraîné avec succès! Précision: {{ accuracy }}%
+            </div>
+
+            <h4>Arbre de Décision:</h4>
+            {% if tree_image %}
+                <img src="data:image/png;base64,{{ tree_image }}" alt="Arbre de décision" class="img-fluid">
+            {% endif %}
+
+            <h4 class="mt-4">Importance des Caractéristiques:</h4>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Caractéristique</th>
+                        <th>Importance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for feature in feature_importance %}
+                        <tr>
+                            <td>{{ feature.feature }}</td>
+                            <td>{{ feature.importance|floatformat:4 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-lg">
+                    Entraîner le Modèle
+                </button>
+            </form>
+        {% endif %}
+
+        <div class="mt-4">
+            <a href="{% url 'index' %}" class="btn btn-secondary">Retour à l'accueil</a>
+        </div>
+    </div>
+</body>
+</html>
