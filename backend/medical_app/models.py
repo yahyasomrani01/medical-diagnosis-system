@@ -5,18 +5,18 @@ class PatientData(models.Model):
     GENDER_CHOICES = [('M', 'Masculin'), ('F', 'Féminin')]
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     
-    fever = models.BooleanField(default=False)
-    cough = models.BooleanField(default=False)
-    chest_pain = models.BooleanField(default=False)
-    shortness_breath = models.BooleanField(default=False)
-    fatigue = models.BooleanField(default=False)
-    headache = models.BooleanField(default=False)
-    nausea = models.BooleanField(default=False)
+    # Lab Results
+    glucose = models.FloatField(help_text="Glucose (mmol/L)")
+    cholesterol = models.FloatField(help_text="Cholesterol (mmol/L)")
+    triglycerides = models.FloatField(help_text="Triglycerides (mmol/L)")
+    creatinine = models.FloatField(help_text="Creatinine (umol/L)")
+    uree = models.FloatField(help_text="Uree (mmol/L)")
+    uric_acid = models.FloatField(help_text="Uric Acid (umol/L)")
+    got = models.FloatField(help_text="GOT (U/L)")
+    gpt = models.FloatField(help_text="GPT (U/L)")
+    bilirubin = models.FloatField(help_text="Bilirubin Total (umol/L)")
     
-    blood_pressure = models.IntegerField()
-    cholesterol = models.IntegerField()
-    blood_sugar = models.IntegerField()
-    
+    # Risk Factors
     smoking = models.BooleanField(default=False)
     obesity = models.BooleanField(default=False)
     family_history = models.BooleanField(default=False)
@@ -24,9 +24,9 @@ class PatientData(models.Model):
     DIAGNOSIS_CHOICES = [
         ('SAIN', 'Patient Sain'),
         ('DIABETE', 'Diabète'),
-        ('HYPER', 'Hypertension'),
-        ('CARDIAC', 'Problème Cardiaque'),
-        ('RESPIRATORY', 'Problème Respiratoire'),
+        ('HYPERLIPIDEMIE', 'Hyperlipidémie'),
+        ('RENAL', 'Insuffisance Rénale'),
+        ('HEPATIQUE', 'Insuffisance Hépatique'),
     ]
     diagnosis = models.CharField(max_length=20, choices=DIAGNOSIS_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

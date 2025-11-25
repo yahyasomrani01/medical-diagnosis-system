@@ -18,42 +18,51 @@ class MedicalDiagnosisModel:
         self.model = None
         self.label_encoders = {}
         self.feature_names = []
-        self.class_names = ['SAIN', 'DIABETE', 'HYPER', 'CARDIAC', 'RESPIRATORY']
+        self.class_names = ['SAIN', 'DIABETE', 'HYPERLIPIDEMIE', 'RENAL', 'HEPATIQUE']
         
     def generate_sample_data(self):
         np.random.seed(42)
-        n_samples = 200
+        n_samples = 1000
         
+        # Generate realistic lab data
         data = {
-            'age': np.random.randint(18, 80, n_samples),
+            'age': np.random.randint(18, 90, n_samples),
             'gender': np.random.choice(['M', 'F'], n_samples),
-            'fever': np.random.choice([0, 1], n_samples, p=[0.7, 0.3]),
-            'cough': np.random.choice([0, 1], n_samples, p=[0.6, 0.4]),
-            'chest_pain': np.random.choice([0, 1], n_samples, p=[0.8, 0.2]),
-            'shortness_breath': np.random.choice([0, 1], n_samples, p=[0.7, 0.3]),
-            'fatigue': np.random.choice([0, 1], n_samples, p=[0.5, 0.5]),
-            'headache': np.random.choice([0, 1], n_samples, p=[0.6, 0.4]),
-            'nausea': np.random.choice([0, 1], n_samples, p=[0.8, 0.2]),
-            'blood_pressure': np.random.randint(90, 180, n_samples),
-            'cholesterol': np.random.randint(150, 300, n_samples),
-            'blood_sugar': np.random.randint(70, 200, n_samples),
-            'smoking': np.random.choice([0, 1], n_samples, p=[0.6, 0.4]),
-            'obesity': np.random.choice([0, 1], n_samples, p=[0.7, 0.3]),
-            'family_history': np.random.choice([0, 1], n_samples, p=[0.5, 0.5]),
+            
+            # Metabolic
+            'glucose': np.random.normal(5.0, 1.5, n_samples),  # Normal 3.9-6.4
+            'cholesterol': np.random.normal(4.5, 1.0, n_samples), # Normal 3.6-6.0
+            'triglycerides': np.random.normal(1.2, 0.5, n_samples), # Normal 0.0-1.9
+            
+            # Kidney
+            'creatinine': np.random.normal(80, 20, n_samples), # Normal 50-120
+            'uree': np.random.normal(5.0, 1.5, n_samples), # Normal 3.5-8.5
+            'uric_acid': np.random.normal(300, 80, n_samples), # Normal 208-428
+            
+            # Liver
+            'got': np.random.normal(25, 10, n_samples), # Normal 0-40
+            'gpt': np.random.normal(25, 10, n_samples), # Normal 0-40
+            'bilirubin': np.random.normal(10, 5, n_samples), # Normal 2.0-21.0
         }
+        
+        # Ensure no negative values
+        for key in data:
+            if key != 'gender':
+                data[key] = np.abs(data[key])
         
         df = pd.DataFrame(data)
         
         diagnoses = []
         for idx, row in df.iterrows():
-            if row['blood_sugar'] > 126 and row['age'] > 45:
+            # Diagnosis Rules
+            if row['glucose'] > 7.0:
                 diagnoses.append('DIABETE')
-            elif row['blood_pressure'] > 140 and row['age'] > 50:
-                diagnoses.append('HYPER')
-            elif row['chest_pain'] and row['shortness_breath'] and row['cholesterol'] > 240:
-                diagnoses.append('CARDIAC')
-            elif row['cough'] and row['shortness_breath'] and row['fever']:
-                diagnoses.append('RESPIRATORY')
+            elif row['cholesterol'] > 6.2 or row['triglycerides'] > 2.3:
+                diagnoses.append('HYPERLIPIDEMIE')
+            elif row['creatinine'] > 130 or row['uree'] > 9.0:
+                diagnoses.append('RENAL')
+            elif row['got'] > 50 or row['gpt'] > 50 or row['bilirubin'] > 25:
+                diagnoses.append('HEPATIQUE')
             else:
                 diagnoses.append('SAIN')
                 
@@ -62,10 +71,15 @@ class MedicalDiagnosisModel:
     
     def preprocess_data(self, df):
         df_encoded = df.copy()
-        categorical_columns = ['gender', 'diagnosis']
-        for col in categorical_columns:
-            self.label_encoders[col] = LabelEncoder()
-            df_encoded[col] = self.label_encoders[col].fit_transform(df[col])
+        # Encode gender
+        le_gender = LabelEncoder()
+        df_encoded['gender'] = le_gender.fit_transform(df['gender'])
+        self.label_encoders['gender'] = le_gender
+        
+        # Encode diagnosis
+        le_diagnosis = LabelEncoder()
+        df_encoded['diagnosis'] = le_diagnosis.fit_transform(df['diagnosis'])
+        self.label_encoders['diagnosis'] = le_diagnosis
         
         self.feature_names = [col for col in df.columns if col != 'diagnosis']
         return df_encoded
@@ -83,8 +97,8 @@ class MedicalDiagnosisModel:
         
         self.model = DecisionTreeClassifier(
             criterion='entropy',
-            max_depth=5,
-            min_samples_split=10,
+            max_depth=8,
+            min_samples_split=5,
             random_state=42
         )
         self.model.fit(X_train, y_train)
@@ -119,24 +133,28 @@ class MedicalDiagnosisModel:
             if not self.load_model():
                 return None, None
         
+        # Create DataFrame from input
         input_data = pd.DataFrame([patient_data])
         
-        for col in input_data.columns:
-            if col in self.label_encoders:
-                try:
-                    input_data[col] = self.label_encoders[col].transform(input_data[col])
-                except ValueError:
-                    input_data[col] = 0
-        
+        # Encode gender
+        if 'gender' in self.label_encoders:
+            input_data['gender'] = self.label_encoders['gender'].transform(input_data['gender'])
+            
+        # Ensure correct column order
         input_data = input_data[self.feature_names]
+        
         prediction = self.model.predict(input_data)[0]
         probabilities = self.model.predict_proba(input_data)[0]
         
         diagnosis = self.label_encoders['diagnosis'].inverse_transform([prediction])[0]
-        prob_dict = {
-            self.class_names[i]: float(prob) 
-            for i, prob in enumerate(probabilities)
-        }
+        
+        # Map probabilities to class names
+        prob_dict = {}
+        for i, prob in enumerate(probabilities):
+            # Get class name from encoder
+            class_idx = self.model.classes_[i]
+            class_name = self.label_encoders['diagnosis'].inverse_transform([class_idx])[0]
+            prob_dict[class_name] = float(prob)
         
         return diagnosis, prob_dict
     
@@ -144,15 +162,15 @@ class MedicalDiagnosisModel:
         if not self.model:
             return None
             
-        plt.figure(figsize=(15, 10))
+        plt.figure(figsize=(20, 10))
         plot_tree(self.model,
                  feature_names=self.feature_names,
-                 class_names=self.class_names,
+                 class_names=self.label_encoders['diagnosis'].classes_,
                  filled=True,
                  rounded=True,
                  fontsize=8)
         
-        plt.title("Arbre de Décision - Diagnostic Médical")
+        plt.title("Arbre de Décision - Diagnostic Médical (Analyses)")
         plt.tight_layout()
         
         buffer = BytesIO()
