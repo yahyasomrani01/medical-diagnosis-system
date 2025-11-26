@@ -1,5 +1,7 @@
 # 🏥 Medical Diagnosis System
 
+Frontend deployed at: <https://yahyasomrani01.github.io/medical-diagnosis-system/>
+
 AI-powered medical diagnosis system with a modern React frontend and Django REST API backend.
 
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
