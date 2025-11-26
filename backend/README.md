@@ -40,6 +40,19 @@ python manage.py runserver
 
 Server will run on `http://localhost:8000`
 
+### 5. Admin User Setup
+
+To access the Django Admin interface, create a superuser:
+
+```bash
+python manage.py createsuperuser
+```
+
+Or run the setup script (if available) to create a default admin:
+
+- Username: `admin`
+- Password: `admin123`
+
 ## API Endpoints
 
 | Endpoint | Method | Description |
@@ -49,7 +62,8 @@ Server will run on `http://localhost:8000`
 | `/api/predict/` | POST | Make prediction |
 | `/api/history/` | GET | Get all predictions |
 | `/api/results/<id>/` | GET | Get specific result |
-| `/api/prescription/<id>/` | GET | Download PDF prescription |
+| `/api/prescription/<id>/` | GET | View prescription PDF (inline) |
+| `/api/prescription-image/<id>/` | GET | View prescription as Image (PNG) |
 
 ## Test API
 

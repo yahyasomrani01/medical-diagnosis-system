@@ -3,6 +3,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
 
 def generate_pdf(patient_data):
     """
@@ -15,7 +16,7 @@ def generate_pdf(patient_data):
     
     # Header
     p.setFont("Helvetica-Bold", 18)
-    p.drawCentredString(width/2, height - 20*mm, "HOPITAL DE CIRCONSCRIPTION DE BOUSALEM")
+    p.drawCentredString(width/2, height - 20*mm, "Système de Diagnostic Médical")
     
     p.setFont("Helvetica", 14)
     p.drawCentredString(width/2, height - 30*mm, "SERVICE LABORATOIRE")
@@ -151,3 +152,111 @@ def get_medications(diagnosis):
         ]
     else:
         return ["Consulter un spécialiste pour avis complémentaire"]
+
+def generate_prescription_image(patient_data):
+    """
+    Generate a PNG prescription image for the given patient data.
+    Returns a BytesIO buffer containing the PNG image.
+    """
+    # Create a white image
+    width, height = 800, 1000
+    img = Image.new('RGB', (width, height), color='white')
+    d = ImageDraw.Draw(img)
+    
+    # Try to load a font, fallback to default
+    try:
+        # Try to find a standard font
+        font_large = ImageFont.truetype("Arial.ttf", 36)
+        font_medium = ImageFont.truetype("Arial.ttf", 24)
+        font_small = ImageFont.truetype("Arial.ttf", 18)
+        font_bold = ImageFont.truetype("Arial Bold.ttf", 24)
+    except IOError:
+        # Fallback for Linux/Mac if Arial not found
+        try:
+            font_large = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36)
+            font_medium = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 24)
+            font_small = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 18)
+            font_bold = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 24)
+        except IOError:
+             # Last resort default font
+            font_large = ImageFont.load_default()
+            font_medium = ImageFont.load_default()
+            font_small = ImageFont.load_default()
+            font_bold = ImageFont.load_default()
+
+    # Header
+    d.text((width/2, 50), "HOPITAL DE CIRCONSCRIPTION DE BOUSALEM", fill="black", anchor="ms", font=font_large)
+    d.text((width/2, 90), "SERVICE LABORATOIRE", fill="black", anchor="ms", font=font_medium)
+    
+    # Line
+    d.line((50, 110, width-50, 110), fill="black", width=2)
+    
+    # Title
+    d.text((width/2, 150), "ORDONNANCE MÉDICALE", fill="black", anchor="ms", font=font_bold)
+    
+    # Patient Info
+    date_str = datetime.now().strftime("%d/%m/%Y")
+    d.text((width-50, 180), f"Date: {date_str}", fill="black", anchor="rs", font=font_small)
+    
+    y = 220
+    d.text((50, y), f"Patient ID: {patient_data.id}", fill="black", font=font_small)
+    y += 30
+    d.text((50, y), f"Age: {patient_data.age} ans", fill="black", font=font_small)
+    y += 30
+    d.text((50, y), f"Sexe: {'Masculin' if patient_data.gender == 'M' else 'Féminin'}", fill="black", font=font_small)
+    
+    # Diagnosis
+    y += 50
+    d.text((50, y), "DIAGNOSTIC:", fill="black", font=font_bold)
+    
+    diagnosis_map = {
+        'SAIN': 'Patient Sain',
+        'DIABETE': 'Diabète',
+        'HYPERLIPIDEMIE': 'Hyperlipidémie',
+        'RENAL': 'Insuffisance Rénale',
+        'HEPATIQUE': 'Insuffisance Hépatique'
+    }
+    diagnosis_display = diagnosis_map.get(patient_data.diagnosis, patient_data.diagnosis)
+    
+    color = (0, 128, 0) if patient_data.diagnosis == 'SAIN' else (204, 51, 51)
+    d.text((250, y), diagnosis_display, fill=color, font=font_medium)
+    
+    # Lab Results
+    y += 50
+    d.text((50, y), "RÉSULTATS D'ANALYSE:", fill="black", font=font_bold)
+    y += 30
+    
+    results = [
+        f"Glucose: {patient_data.glucose} mmol/L",
+        f"Cholestérol: {patient_data.cholesterol} mmol/L",
+        f"Triglycérides: {patient_data.triglycerides} mmol/L",
+        f"Créatinine: {patient_data.creatinine} µmol/L",
+        f"Urée: {patient_data.uree} mmol/L",
+        f"Acide Urique: {patient_data.uric_acid} µmol/L",
+        f"GOT: {patient_data.got} U/L",
+        f"GPT: {patient_data.gpt} U/L",
+        f"Bilirubine: {patient_data.bilirubin} µmol/L"
+    ]
+    
+    for res in results:
+        d.text((80, y), f"- {res}", fill="black", font=font_small)
+        y += 25
+        
+    # Treatment
+    y += 30
+    d.text((50, y), "TRAITEMENT PRESCRIT:", fill="black", font=font_bold)
+    y += 30
+    
+    medications = get_medications(patient_data.diagnosis)
+    
+    for med in medications:
+        d.text((80, y), f"- {med}", fill="black", font=font_small)
+        y += 30
+        
+    # Footer
+    d.text((width/2, height-100), "Signature du Médecin:", fill="black", anchor="ms", font=font_medium)
+    
+    buffer = io.BytesIO()
+    img.save(buffer, format='PNG')
+    buffer.seek(0)
+    return buffer

@@ -136,10 +136,9 @@ def health_check(request):
     })
 
 
-from django.http import FileResponse
-from .utils import generate_pdf
+from django.http import FileResponse, JsonResponse, HttpResponse
+from .utils import generate_pdf, generate_prescription_image
 
-@api_view(['GET'])
 def download_prescription_pdf(request, patient_id):
     """Generate and download prescription PDF"""
     try:
@@ -150,15 +149,31 @@ def download_prescription_pdf(request, patient_id):
         
         return FileResponse(
             buffer, 
-            as_attachment=True, 
+            as_attachment=False, 
             filename=filename,
             content_type='application/pdf'
         )
     except PatientData.DoesNotExist:
-        return Response({
+        return JsonResponse({
             'error': 'Patient not found'
-        }, status=status.HTTP_404_NOT_FOUND)
+        }, status=404)
     except Exception as e:
-        return Response({
+        return JsonResponse({
             'error': str(e)
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        }, status=500)
+
+def view_prescription_image(request, patient_id):
+    """Generate and view prescription image"""
+    try:
+        patient = PatientData.objects.get(id=patient_id, prediction_made=True)
+        buffer = generate_prescription_image(patient)
+        
+        return HttpResponse(buffer.getvalue(), content_type="image/png")
+    except PatientData.DoesNotExist:
+        return JsonResponse({
+            'error': 'Patient not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)

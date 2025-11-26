@@ -1,4 +1,5 @@
 import React from 'react';
+import api from '../services/api';
 
 const ResultsModal = ({ result, onClose, onNewDiagnosis }) => {
     const diagnosisMap = {
@@ -17,51 +18,11 @@ const ResultsModal = ({ result, onClose, onNewDiagnosis }) => {
         'HEPATIQUE': '🍺',
     };
 
-    const handleDownloadPrescription = async () => {
-        try {
-            console.log("Requesting PDF from backend for patient ID:", result.id);
-
-            // Use the API URL from environment or default
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-
-            const response = await fetch(`${API_URL}/prescription/${result.id}/`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/pdf',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-
-            // Extract filename from header if possible, or construct one
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = `Ordonnance_Patient_${result.id}.pdf`;
-
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-                if (filenameMatch && filenameMatch.length === 2)
-                    filename = filenameMatch[1];
-            }
-
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            console.log("PDF downloaded successfully");
-
-        } catch (error) {
-            console.error("Error downloading PDF:", error);
-            alert("Erreur lors du téléchargement de l'ordonnance. Veuillez réessayer.");
-        }
+    const handleViewPrescription = () => {
+        // Use the API URL from environment or default
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+        const pdfUrl = `${API_URL}/prescription/${result.id}/`;
+        window.open(pdfUrl, '_blank');
     };
 
     return (
@@ -110,7 +71,7 @@ const ResultsModal = ({ result, onClose, onNewDiagnosis }) => {
                 {/* Actions */}
                 <div className="flex flex-col gap-3">
                     <button
-                        onClick={handleDownloadPrescription}
+                        onClick={handleViewPrescription}
                         className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

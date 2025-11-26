@@ -50,6 +50,7 @@ Build files will be in `dist/` directory.
 - ⚡ Fast Vite dev server
 - 🔄 Real-time API communication
 - 🎯 Tab navigation (Diagnostic / History)
+- 📄 Inline PDF Prescription View
 
 ## Project Structure
 
@@ -80,6 +81,7 @@ frontend/
    - Enter symptoms and vitals
    - Click "Analyser et Diagnostiquer"
    - View results in modal
+   - Click "Télécharger Ordonnance" to view PDF in new tab
 
 3. **View History**:
    - Click "Historique" tab

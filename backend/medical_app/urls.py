@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/history/', api_views.history_api, name='history_api'),
     path('api/results/<int:patient_id>/', api_views.result_detail_api, name='result_detail_api'),
     path('api/prescription/<int:patient_id>/', api_views.download_prescription_pdf, name='download_prescription_pdf'),
+    path('api/prescription-image/<int:patient_id>/', api_views.view_prescription_image, name='view_prescription_image'),
 ]
